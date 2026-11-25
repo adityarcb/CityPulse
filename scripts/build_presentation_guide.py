@@ -1,0 +1,1278 @@
+#!/usr/bin/env python3
+"""
+CityPulse — Student-to-Teacher Presentation & Viva Preparation Guide Generator
+Compiles an easy-to-understand, beautifully formatted PDF guide with:
+- Plain English explanations of all Big Data & Cluster Computing concepts
+- Real-world analogies for Kafka, Spark, RDDs, DAGs, Watermarking, etc.
+- Step-by-step viva questions with high-scoring answers
+- 5-minute live demo script and teacher defense strategies
+"""
+
+import os
+import sys
+import subprocess
+
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUTPUT_HTML = os.path.join(ROOT_DIR, "report", "CityPulse_Teacher_Presentation_Guide.html")
+OUTPUT_PDF = os.path.join(ROOT_DIR, "CityPulse_Teacher_Presentation_Guide.pdf")
+REPORT_PDF = os.path.join(ROOT_DIR, "report", "CityPulse_Teacher_Presentation_Guide.pdf")
+
+HTML_CONTENT = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CityPulse — Project Presentation & Viva Guide</title>
+<style>
+    @page {
+        size: A4;
+        margin: 16mm 14mm 16mm 14mm;
+        @bottom-right {
+            content: counter(page);
+            font-size: 9pt;
+            color: #64748B;
+        }
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: #0F172A;
+        background-color: #FFFFFF;
+        line-height: 1.55;
+        font-size: 10.5pt;
+    }
+
+    /* Cover Page */
+    .cover {
+        page-break-after: always;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 40px 20px 20px 20px;
+    }
+
+    .cover-badge {
+        display: inline-block;
+        background: #EEF2FF;
+        color: #4F46E5;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 10pt;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        border: 1px solid #C7D2FE;
+        margin-bottom: 20px;
+    }
+
+    .cover-title {
+        font-size: 32pt;
+        font-weight: 800;
+        line-height: 1.15;
+        color: #0F172A;
+        margin-bottom: 15px;
+    }
+
+    .cover-title span {
+        color: #0D9488;
+    }
+
+    .cover-subtitle {
+        font-size: 14pt;
+        color: #475569;
+        line-height: 1.45;
+        margin-bottom: 30px;
+        max-width: 650px;
+    }
+
+    .cover-highlights {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 40px;
+    }
+
+    .highlight-card {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 10px;
+        padding: 16px;
+    }
+
+    .highlight-card h4 {
+        font-size: 11pt;
+        color: #0F172A;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .highlight-card p {
+        font-size: 9.5pt;
+        color: #64748B;
+        line-height: 1.4;
+    }
+
+    .cover-footer {
+        border-top: 2px solid #F1F5F9;
+        padding-top: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+    }
+
+    .student-info h3 {
+        font-size: 13pt;
+        color: #0F172A;
+        font-weight: 700;
+    }
+
+    .student-info p {
+        font-size: 10pt;
+        color: #64748B;
+        margin-top: 3px;
+    }
+
+    .doc-meta {
+        text-align: right;
+        font-size: 9pt;
+        color: #94A3B8;
+    }
+
+    /* Headings */
+    h1 {
+        font-size: 18pt;
+        font-weight: 800;
+        color: #0F172A;
+        margin-top: 25px;
+        margin-bottom: 14px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #0D9488;
+        page-break-after: avoid;
+    }
+
+    h2 {
+        font-size: 13pt;
+        font-weight: 700;
+        color: #1E293B;
+        margin-top: 20px;
+        margin-bottom: 10px;
+        page-break-after: avoid;
+    }
+
+    h3 {
+        font-size: 11pt;
+        font-weight: 700;
+        color: #334155;
+        margin-top: 14px;
+        margin-bottom: 6px;
+        page-break-after: avoid;
+    }
+
+    p {
+        margin-bottom: 10px;
+        text-align: justify;
+    }
+
+    ul, ol {
+        margin-left: 20px;
+        margin-bottom: 12px;
+    }
+
+    li {
+        margin-bottom: 5px;
+    }
+
+    strong {
+        color: #0F172A;
+    }
+
+    /* Section Page Break */
+    .section-break {
+        page-break-before: always;
+    }
+
+    /* Callout Boxes */
+    .callout {
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin: 14px 0;
+        page-break-inside: avoid;
+        font-size: 9.8pt;
+    }
+
+    .callout-header {
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 8.5pt;
+        letter-spacing: 0.05em;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* Simple Words (Teal) */
+    .callout-simple {
+        background: #F0FDFA;
+        border-left: 4px solid #0D9488;
+        border: 1px solid #CCFBF1;
+        border-left-width: 4px;
+        color: #134E4A;
+    }
+    .callout-simple .callout-header {
+        color: #0F766E;
+    }
+
+    /* Teacher Expectation (Indigo) */
+    .callout-teacher {
+        background: #EEF2FF;
+        border: 1px solid #E0E7FF;
+        border-left: 4px solid #4F46E5;
+        color: #312E81;
+    }
+    .callout-teacher .callout-header {
+        color: #4338CA;
+    }
+
+    /* Viva High-Score (Amber) */
+    .callout-viva {
+        background: #FFFBEB;
+        border: 1px solid #FEF3C7;
+        border-left: 4px solid #D97706;
+        color: #78350F;
+    }
+    .callout-viva .callout-header {
+        color: #B45309;
+    }
+
+    /* Warning / Trap (Rose) */
+    .callout-trap {
+        background: #FFF1F2;
+        border: 1px solid #FFE4E6;
+        border-left: 4px solid #E11D48;
+        color: #881337;
+    }
+    .callout-trap .callout-header {
+        color: #BE123C;
+    }
+
+    /* Tables */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 14px 0;
+        font-size: 9pt;
+        page-break-inside: avoid;
+    }
+
+    th, td {
+        border: 1px solid #CBD5E1;
+        padding: 8px 10px;
+        text-align: left;
+    }
+
+    th {
+        background: #F1F5F9;
+        font-weight: 700;
+        color: #1E293B;
+    }
+
+    tr:nth-child(even) td {
+        background: #F8FAFC;
+    }
+
+    /* Code block */
+    pre, code {
+        font-family: "JetBrains Mono", Consolas, "Courier New", monospace;
+    }
+
+    code {
+        background: #F1F5F9;
+        color: #0F172A;
+        padding: 2px 5px;
+        border-radius: 4px;
+        font-size: 8.5pt;
+    }
+
+    pre {
+        background: #0F172A;
+        color: #F8FAFC;
+        padding: 12px 14px;
+        border-radius: 8px;
+        font-size: 8.5pt;
+        line-height: 1.45;
+        margin: 12px 0;
+        overflow-x: auto;
+        page-break-inside: avoid;
+    }
+
+    /* Flow diagram box */
+    .flow-box {
+        background: #F8FAFC;
+        border: 1px dashed #94A3B8;
+        border-radius: 8px;
+        padding: 12px;
+        margin: 14px 0;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 8.5pt;
+        line-height: 1.35;
+        color: #1E293B;
+        page-break-inside: avoid;
+    }
+
+    /* Q&A Item */
+    .qa-box {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 14px 16px;
+        margin-bottom: 14px;
+        page-break-inside: avoid;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    .qa-question {
+        font-size: 10.5pt;
+        font-weight: 700;
+        color: #0F172A;
+        margin-bottom: 8px;
+        display: flex;
+        gap: 8px;
+    }
+
+    .qa-badge {
+        background: #0D9488;
+        color: #FFFFFF;
+        padding: 2px 7px;
+        border-radius: 12px;
+        font-size: 7.5pt;
+        font-weight: 700;
+        height: fit-content;
+        margin-top: 2px;
+        white-space: nowrap;
+    }
+
+    .qa-answer {
+        font-size: 9.8pt;
+        color: #334155;
+        line-height: 1.5;
+    }
+
+    .qa-bullet {
+        margin-left: 18px;
+        margin-top: 6px;
+    }
+
+    .qa-bullet li {
+        margin-bottom: 4px;
+    }
+</style>
+</head>
+<body>
+
+<!-- ========================================================================= -->
+<!-- COVER PAGE -->
+<!-- ========================================================================= -->
+<div class="cover">
+    <div>
+        <div class="cover-badge">Presentation &amp; Viva Defense Guide</div>
+        <h1 class="cover-title">CityPulse: <span>How to Explain Everything</span> to Your Teacher</h1>
+        <p class="cover-subtitle">
+            A complete, plain-English master guide for understanding every architecture component, distributed computing algorithm, data pipeline step, and answering all viva questions with 100% confidence.
+        </p>
+
+        <div class="cover-highlights">
+            <div class="highlight-card">
+                <h4>🎯 Zero-Confusion Explanations</h4>
+                <p>Every complex term (Kafka, RDD, DAG, Watermarking, Shuffling, VectorAssembler) explained using real-world everyday analogies.</p>
+            </div>
+            <div class="highlight-card">
+                <h4>🎙️ 5-Minute Presentation Script</h4>
+                <p>A word-for-word spoken script that guides you through the live demo, what screens to click, and what key points to highlight.</p>
+            </div>
+            <div class="highlight-card">
+                <h4>⭐ Top 25 Viva Q&amp;A</h4>
+                <p>The exact tricky questions teachers love to ask during evaluations, paired with crisp, high-scoring technical answers.</p>
+            </div>
+            <div class="highlight-card">
+                <h4>🛡️ Live Indian CPCB Data Flow</h4>
+                <p>Full breakdown of how official government air quality APIs feed into Kafka, Spark Streaming, and PostgreSQL in real time.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="cover-footer">
+        <div class="student-info">
+            <h3>Aditya Raj</h3>
+            <p>Registration Number: <strong>12309017</strong> &nbsp;|&nbsp; Project: <strong>CityPulse</strong></p>
+            <p>Environmental Intelligence &amp; Distributed Real-Time Air Quality Analytics Engine</p>
+        </div>
+        <div class="doc-meta">
+            <p>Master Defense Manual</p>
+            <p>Academic Year 2026</p>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- CHAPTER 1: THE 60-SECOND ELEVATOR PITCH -->
+<!-- ========================================================================= -->
+<div class="section-break"></div>
+<h1>1. The 60-Second Elevator Pitch &amp; What Is CityPulse?</h1>
+
+<div class="callout callout-simple">
+    <div class="callout-header">💡 In Simple Words for You</div>
+    Imagine millions of air quality sensors across Indian cities sending pollution numbers every second. A single laptop or standard server would crash or freeze trying to process, clean, detect hazards, and graph all that data at once. <strong>CityPulse</strong> is an industrial-grade Big Data system that ingests, cleans, analyzes, and visualizes air pollution across 10 major Indian cities in real time without lag or data loss.
+</div>
+
+<h2>What to Say in the First 60 Seconds</h2>
+<p>
+    When your teacher says: <em>"Aditya, introduce your project,"</em> speak with confidence and deliver this crisp opening:
+</p>
+
+<div class="callout callout-teacher">
+    <div class="callout-header">🎯 What to Say to Your Teacher</div>
+    <p><em>
+        "Good morning, Professor. My project is <strong>CityPulse</strong>, an enterprise-grade distributed environmental intelligence platform designed to tackle India's urban air pollution crisis.
+    </em></p>
+    <p><em>
+        Instead of building a simple dashboard that queries a static database, CityPulse implements an end-to-end <strong>Distributed Stream Processing Pipeline</strong>:
+    </em></p>
+    <ul style="margin-left: 18px; margin-top: 6px;">
+        <li><em>It continuously collects live PM2.5 and pollutant telemetry from official <strong>CPCB CAAQMS stations</strong> across 10 canonical Indian cities.</em></li>
+        <li><em>It buffers telemetry through a distributed <strong>Apache Kafka</strong> commit log to prevent data loss.</em></li>
+        <li><em>It processes continuous micro-batches using <strong>Apache Spark Structured Streaming</strong> with 5-minute tumbling windows and event-time watermarking.</em></li>
+        <li><em>It runs an automated <strong>Finite State Machine</strong> for alert escalation and a <strong>3-Sigma statistical anomaly detector</strong>.</em></li>
+        <li><em>And it exposes distributed computing labs—including <strong>Spark SQL, Spark MLlib, and GraphX diffusion modeling</strong>—in an interactive real-time dashboard."</em></li>
+    </ul>
+</div>
+
+<h2>Why Is This Project Important? (The Problem Statement)</h2>
+<ul>
+    <li><strong>Air Pollution in India is Severe:</strong> PM2.5 particles are less than 2.5 micrometers in diameter (30 times thinner than human hair). When inhaled, they penetrate deep into the lungs and enter the bloodstream, causing respiratory illness, cardiovascular attacks, and reduced life expectancy.</li>
+    <li><strong>Data Overload:</strong> Modern cities install hundreds of Internet of Things (IoT) sensors and continuous monitoring stations. This generates massive volumes of high-velocity time-series data.</li>
+    <li><strong>The Big Data Challenge:</strong> Traditional relational databases choke when hundreds of sensors write simultaneously. Raw sensor streams often contain transmission dropouts, delayed packets, and noise. CityPulse solves this using a decoupled, fault-tolerant cluster computing architecture.</li>
+</ul>
+
+<!-- ========================================================================= -->
+<!-- CHAPTER 2: WHERE DOES THE DATA COME FROM? -->
+<!-- ========================================================================= -->
+<div class="section-break"></div>
+<h1>2. Where Does the Data Come From? (Data Sources)</h1>
+
+<p>
+    One of the very first questions your teacher will ask is: <em>"Where did you get this data? Is it fake or real?"</em> Here is the exact technical answer:
+</p>
+
+<div class="callout callout-simple">
+    <div class="callout-header">💡 In Simple Words for You</div>
+    CityPulse has a dual-engine data feeder:
+    <ol style="margin-left: 18px; margin-top: 4px;">
+        <li><strong>Real-time mode:</strong> It connects directly to the Indian Government's official Open Data portal (<code>data.gov.in</code>) and pulls live air quality numbers measured by Central Pollution Control Board (CPCB) monitoring towers.</li>
+        <li><strong>Simulation/Seed mode:</strong> When presenting offline or without internet, we have a mathematical generator that simulates realistic day/night pollution curves (e.g., Delhi smog spikes at 8 AM and 9 PM during rush hour).</li>
+        <li><strong>Isolation flag (<code>is_test</code>):</strong> A boolean flag in the database that separates test data from production so our automated test suite never corrupts real data.</li>
+    </ol>
+</div>
+
+<h2>The Two Ingestion Modes Breakdown</h2>
+<table>
+    <thead>
+        <tr>
+            <th style="width: 20%;">Mode</th>
+            <th style="width: 35%;">Implementation Script</th>
+            <th style="width: 45%;">How It Works</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Live Official Ingestion</strong></td>
+            <td><code>scripts/live_cpcb_producer.py</code></td>
+            <td>
+                Calls the CPCB CAAQMS API on <code>data.gov.in</code> using a secure API Key. Extracts PM2.5, PM10, NO2, SO2, CO, and Ozone for 10 canonical cities: Delhi, Mumbai, Kolkata, Bengaluru, Chennai, Hyderabad, Ahmedabad, Pune, Lucknow, and Patna. Publishes JSON messages to Kafka.
+            </td>
+        </tr>
+        <tr>
+            <td><strong>Seed / Offline Generator</strong></td>
+            <td><code>scripts/generate_seed_data.py</code></td>
+            <td>
+                Generates 2,600+ realistic readings across 72 hours. Uses trigonometric diurnal curves (rush-hour peaks, midday dispersal) plus Gaussian noise ($\mu=0, \sigma=8$). Injects real weather correlations: cold winter inversions produce higher PM2.5; high wind speeds disperse smoke.
+            </td>
+        </tr>
+        <tr>
+            <td><strong>Interactive Publisher</strong></td>
+            <td>Dashboard UI (Kafka Pipeline Page)</td>
+            <td>
+                Allows you or the teacher to pick a city, set a custom PM2.5 value (e.g. 350 µg/m³), and click <em>"Publish Event to Kafka"</em> right from the web browser to watch the pipeline process it live!
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="callout callout-viva">
+    <div class="callout-header">⭐ High-Scoring Viva Answer</div>
+    <strong>Teacher:</strong> <em>"What happens if the government CPCB API is down or throttles your API key?"</em><br>
+    <strong>You say:</strong> <em>"We designed a graceful degradation architecture. The producer catches HTTP 429 (rate limits) and 500 server errors, logs an error, and falls back to our deterministic historical sensor generator. Furthermore, Kafka decouples ingestion: even if the API temporarily disconnects, our downstream Spark jobs continue processing buffered messages without crashing."</em>
+</div>
+
+<!-- ========================================================================= -->
+<!-- CHAPTER 3: HIGH-LEVEL ARCHITECTURE & PIPELINE FLOW -->
+<!-- ========================================================================= -->
+<div class="section-break"></div>
+<h1>3. High-Level Architecture &amp; End-to-End Pipeline</h1>
+
+<p>
+    CityPulse follows the industry-standard <strong>Decoupled Lambda/Kappa Architecture</strong> for streaming analytics. Below is the complete pipeline diagram from sensor to screen:
+</p>
+
+<div class="flow-box">
+[Official CPCB API]  OR  [Seed Simulator]  OR  [Live Dashboard UI]
+       │                         │                       │
+       └─────────────────────────┼───────────────────────┘
+                                 ▼
+                     [scripts/live_cpcb_producer.py]
+                                 │
+                   JSON Payload with Timestamp
+                                 │
+                                 ▼
+                 ┌───────────────────────────────┐
+                 │       APACHE KAFKA BROKER     │
+                 │   Topic: "pollution-readings" │
+                 │   Partitions: 0, 1, 2...      │
+                 └───────────────┬───────────────┘
+                                 │
+         ┌───────────────────────┴───────────────────────┐
+         ▼                                               ▼
+┌─────────────────────────────────┐   ┌─────────────────────────────────┐
+│     PYTHON INGESTION WORKER     │   │     SPARK STREAMING ENGINE      │
+│     (ingestion/consumer.py)     │   │   (spark_jobs/kafka_stream.py)  │
+│                                 │   │                                 │
+│ 1. Schema Validation (Marshmallow) 1. 5-Minute Tumbling Windows       │
+│ 2. Alert FSM (NEW/ACK/RESOLVED) │   │ 2. Event-Time Watermarking (10m)│
+│ 3. 3-Sigma Anomaly Detection    │   │ 3. Micro-Batch Aggregations     │
+└────────────────┬────────────────┘   └────────────────┬────────────────┘
+                 │                                     │
+                 └──────────────────┬──────────────────┘
+                                    ▼
+                 ┌─────────────────────────────────────┐
+                 │         POSTGRESQL DATABASE         │
+                 │   - pollution_readings (Raw data)   │
+                 │   - alert_state (FSM tracker)       │
+                 │   - pollution_anomalies (Z-scores)  │
+                 │   - city_latest (Canonical View)    │
+                 └──────────────────┬──────────────────┘
+                                    │
+                                    ▼
+                 ┌─────────────────────────────────────┐
+                 │     STREAMLIT INTERACTIVE UI        │
+                 │   - 11 Dedicated Application Pages  │
+                 │   - Living Atmosphere Visual System │
+                 │   - Spark SQL, MLlib & GraphX Labs  │
+                 └─────────────────────────────────────┘
+</div>
+
+<h2>The 5 Steps of the Pipeline Explained Simply</h2>
+<ol>
+    <li><strong>Step 1 — Ingestion (The Producer):</strong> Sensor readings are packed into clean JSON objects containing <code>city</code>, <code>pm25</code>, <code>temperature</code>, <code>humidity</code>, <code>wind_speed</code>, and a UTC <code>timestamp</code>.</li>
+    <li><strong>Step 2 — Buffering (Apache Kafka):</strong> The producer writes messages to Kafka topic <code>pollution-readings</code>. Kafka stores them in an append-only commit log on disk. If downstream processing is slow, Kafka acts as a shock absorber.</li>
+    <li><strong>Step 3 — Processing (Dual Stream Consumers):</strong>
+        <ul style="margin-left: 18px;">
+            <li><em>Python Consumer:</em> Validates data types, runs the alert state machine, and checks if the reading is a statistical anomaly ($Z > 3.0$).</li>
+            <li><em>Spark Structured Streaming:</em> Groups readings into 5-minute tumbling windows to calculate rolling averages, preventing noisy spikes from triggering false alarms.</li>
+        </ul>
+    </li>
+    <li><strong>Step 4 — Storage (PostgreSQL):</strong> Writes clean records into tables with compound B-tree indexes on <code>(city, timestamp DESC)</code> for sub-millisecond retrieval.</li>
+    <li><strong>Step 5 — Presentation (Streamlit Dashboard):</strong> A reactive web dashboard running on port 8502 that auto-refreshes, plots live geospatial maps, and lets users test distributed computing models.</li>
+</ol>
+
+<!-- ========================================================================= -->
+<!-- CHAPTER 4: CLUSTER COMPUTING CONCEPTS EXPLAINED SIMPLY -->
+<!-- ========================================================================= -->
+<div class="section-break"></div>
+<h1>4. Big Data &amp; Cluster Computing Concepts (In Plain English!)</h1>
+
+<p>
+    This chapter is your secret weapon. When teachers evaluate cluster computing projects, they want to verify whether you understand the <em>core theory</em> behind the tools. Memorize these simple explanations and analogies!
+</p>
+
+<!-- SECTION 4.1: KAFKA -->
+<h2>4.1 Apache Kafka</h2>
+<div class="callout callout-simple">
+    <div class="callout-header">💡 Everyday Analogy: The Conveyor Belt &amp; Mailboxes</div>
+    Imagine a busy post office. Instead of delivery persons running directly to every house whenever a letter arrives, all letters are dropped onto a moving conveyor belt with labelled pigeonholes (<strong>Topics</strong>). Delivery drivers (<strong>Consumers</strong>) read letters from their assigned box whenever they are ready. If a driver takes a break, the letters wait safely in the box without getting lost. That is Kafka!
+</div>
+
+<ul>
+    <li><strong>Topic:</strong> A categorized feed name where messages are published (our topic is <code>pollution-readings</code>).</li>
+    <li><strong>Producer:</strong> The sender of messages (our Python CPCB script).</li>
+    <li><strong>Consumer:</strong> The reader of messages (our ingestion worker and Spark streaming job).</li>
+    <li><strong>Partition:</strong> A topic is divided into partitions across multiple machines for horizontal scalability and parallel processing.</li>
+    <li><strong>Offset:</strong> A sequential integer assigned to each message in a partition. It acts like a bookmark so a consumer knows where it left off.</li>
+    <li><strong>Consumer Group:</strong> A team of consumers cooperating to read data. Each partition is consumed by only one worker in the group, ensuring parallel throughput.</li>
+</ul>
+
+<div class="callout callout-viva">
+    <div class="callout-header">⭐ High-Scoring Viva Answer</div>
+    <strong>Teacher:</strong> <em>"Why did you use Kafka instead of sending REST POST requests directly to PostgreSQL?"</em><br>
+    <strong>You say:</strong> <em>"If 10,000 sensors send readings at the same instant during a storm, sending HTTP requests directly to PostgreSQL would exhaust database connection pools and crash the server. Kafka acts as an asynchronous distributed message buffer. It provides backpressure handling, high throughput (over 100,000 writes/sec), persistence on disk, and decouples our data producers from consumers. If our database is restarted for maintenance, Kafka holds all messages safely without losing a single reading."</em>
+</div>
+
+<!-- SECTION 4.2: SPARK & RDDS -->
+<h2>4.2 Apache Spark &amp; RDDs (Resilient Distributed Datasets)</h2>
+<div class="callout callout-simple">
+    <div class="callout-header">💡 Everyday Analogy: The Multi-Chef Kitchen &amp; Recipe Lineage</div>
+    Traditional Hadoop MapReduce is like a chef who cooks step 1, puts the dish in the freezer, writes a note on disk, takes it out, cooks step 2, and freezes it again. It is very slow because of continuous disk I/O.
+    <br><br>
+    <strong>Apache Spark</strong> is like having 10 master chefs working in parallel with ingredients held in front of them on cutting boards (<strong>In-Memory RAM</strong>). If one chef drops a carrot, they don't restart the whole banquet—they look at the recipe (<strong>Lineage DAG</strong>) and simply chop one replacement carrot!
+</div>
+
+<h3>Key Terminology:</h3>
+<ul>
+    <li><strong>Resilient:</strong> Fault-tolerant. If a worker node dies, Spark can recompute the missing piece of data.</li>
+    <li><strong>Distributed:</strong> The dataset is partitioned and spread across multiple machines in a cluster.</li>
+    <li><strong>Dataset:</strong> A collection of values or objects.</li>
+    <li><strong>Lazy Evaluation:</strong> Spark does not execute transformations immediately. Instead, it builds an execution plan (DAG). It only computes when an <strong>Action</strong> (like <code>count()</code>, <code>collect()</code>, or <code>save()</code>) is called. This allows Spark's Catalyst optimizer to find the fastest shortcut before doing any work!</li>
+    <li><strong>Transformations vs Actions:</strong>
+        <ul style="margin-left: 18px;">
+            <li><em>Transformations</em> return a new RDD: <code>map()</code>, <code>filter()</code>, <code>groupBy()</code>. (Lazy!)</li>
+            <li><em>Actions</em> return a value or write to disk: <code>count()</code>, <code>first()</code>, <code>take()</code>, <code>collect()</code>. (Eager!)</li>
+        </ul>
+    </li>
+    <li><strong>Narrow vs Wide Dependencies (Crucial Exam Question!):</strong>
+        <ul style="margin-left: 18px;">
+            <li><em>Narrow Dependency:</em> Each parent partition is used by at most one child partition (e.g., <code>map</code>, <code>filter</code>). Fast! No network transfer needed.</li>
+            <li><em>Wide Dependency:</em> Multiple child partitions depend on data from the parent partition (e.g., <code>groupByKey</code>, <code>reduceByKey</code>, <code>join</code>). This requires a <strong>Shuffle</strong>—transferring data across the network between cluster nodes, which is expensive.</li>
+        </ul>
+    </li>
+</ul>
+
+<div class="callout callout-viva">
+    <div class="callout-header">⭐ High-Scoring Viva Answer</div>
+    <strong>Teacher:</strong> <em>"What is an RDD Lineage Graph and how does Spark achieve fault tolerance without replication?"</em><br>
+    <strong>You say:</strong> <em>"Instead of replicating multi-gigabyte datasets across machines like HDFS, Spark logs the exact chain of transformations used to build an RDD—this is the Lineage DAG (Directed Acyclic Graph). If a cluster node fails and loses partition #4, Spark does not restart the entire job. The master node simply schedules partition #4 on another worker node, which replays only the required transformation steps on that single partition. This makes Spark orders of magnitude faster and memory-efficient."</em>
+</div>
+
+<!-- SECTION 4.3: STREAMING & WINDOWING -->
+<h2>4.3 Spark Structured Streaming &amp; Windowing</h2>
+<div class="callout callout-simple">
+    <div class="callout-header">💡 Everyday Analogy: The Moving Water Bucket &amp; Late Mail</div>
+    If you look at raw sensor readings second-by-second, numbers jump up and down erratically due to wind gusts or sensor noise.
+    <br><br>
+    A <strong>5-minute Tumbling Window</strong> is like catching rain in a bucket for exactly 5 minutes, measuring the average water collected, emptying the bucket, and starting the next 5-minute interval. It smooths out noise and gives reliable environmental trends!
+</div>
+
+<h3>Key Streaming Concepts:</h3>
+<ul>
+    <li><strong>Micro-Batching:</strong> Spark Structured Streaming discretizes continuous live data into tiny micro-batches (e.g., every 500ms or 2 seconds) and runs them through the fast Spark SQL engine.</li>
+    <li><strong>Event-Time vs Processing-Time:</strong>
+        <ul style="margin-left: 18px;">
+            <li><em>Processing-Time:</em> The wall-clock time when the Spark server happened to receive the data packet.</li>
+            <li><em>Event-Time:</em> The exact timestamp embedded in the sensor hardware when the pollution was physically measured. CityPulse uses <strong>Event-Time</strong> because cell network delays should not distort pollution records!</li>
+        </ul>
+    </li>
+    <li><strong>Watermarking:</strong> How long should Spark wait for late-arriving data? CityPulse sets a 10-minute watermark: <code>.withWatermark("timestamp", "10 minutes")</code>. If a 4G connection in Patna cuts out for 3 minutes and then delivers late readings, Spark correctly routes them into their past 5-minute window! But data arriving after 10 minutes is dropped to prevent memory leaks.</li>
+</ul>
+
+<!-- SECTION 4.4: SPARK SQL -->
+<h2>4.4 Spark SQL &amp; DataFrames</h2>
+<p>
+    While RDDs operate on raw objects, <strong>DataFrames</strong> are distributed collections of data organized into named columns (like a table in a relational database or a Pandas DataFrame, but distributed across a cluster).
+</p>
+<ul>
+    <li><strong>Catalyst Optimizer:</strong> Spark SQL's query engine that inspects your SQL or DataFrame code, reorders filters (pushing filters down before expensive joins), and eliminates unnecessary column scans automatically.</li>
+    <li><strong>Project Tungsten:</strong> Generates optimized Java bytecode on the fly and manages memory off-heap in raw binary format to avoid Java Garbage Collection (GC) pauses.</li>
+    <li><strong>In CityPulse:</strong> We expose interactive Spark SQL queries in the dashboard (e.g. ranking cities by severity, hourly averages, threshold breach analysis).</li>
+</ul>
+
+<!-- SECTION 4.5: SPARK MLLIB -->
+<h2>4.5 Spark MLlib (Distributed Machine Learning)</h2>
+<p>
+    Running machine learning on millions of rows on a single machine causes <code>OutOfMemoryError</code>. <strong>Spark MLlib</strong> provides distributed machine learning algorithms that scale across nodes.
+</p>
+<ul>
+    <li><strong>VectorAssembler:</strong> A transformer that combines raw feature columns (<code>temperature</code>, <code>humidity</code>, <code>wind_speed</code>, <code>hour_of_day</code>) into a single unified feature vector column required by Spark MLlib estimators.</li>
+    <li><strong>Algorithms Implemented in CityPulse:</strong>
+        <ol style="margin-left: 18px;">
+            <li><em>Linear Regression:</em> Predicts future PM2.5 levels based on atmospheric variables, calculating $R^2$, RMSE, and MAE.</li>
+            <li><em>Multi-Model Classifier Benchmark:</em> Compares Logistic Regression, Decision Trees, Support Vector Machines (SVM), and Naive Bayes for classifying air hazard levels, plotting an interactive <strong>Confusion Matrix heatmap</strong>.</li>
+            <li><em>K-Means Clustering:</em> Clusters Indian cities into 3 pollution archetypes (e.g., Clean Coastal, Moderate Industrial, Severe Continental Smog).</li>
+        </ol>
+    </li>
+</ul>
+
+<!-- SECTION 4.6: GRAPH ANALYTICS / GRAPHX -->
+<h2>4.6 Graph Analytics &amp; Diffusion Modeling (GraphX)</h2>
+<div class="callout callout-simple">
+    <div class="callout-header">💡 Everyday Analogy: Air as a Social Network</div>
+    In a social network, people are <strong>Vertices (Nodes)</strong> and friendships are <strong>Edges (Lines)</strong>.
+    In CityPulse, <strong>Cities are Vertices</strong> and <strong>Wind Corridors are Edges</strong>! When crop burning in Punjab releases smoke, wind carries it to Delhi, and then down the Indo-Gangetic plain to Lucknow and Patna. GraphX models pollution spreading across geography like a viral message across Twitter.
+</div>
+<ul>
+    <li><strong>PageRank:</strong> Just as Google PageRank identifies the most authoritative websites, CityPulse uses PageRank to identify the most critical <em>pollution distribution hubs</em> (cities whose smog severely impacts neighboring states).</li>
+    <li><strong>Connected Components:</strong> Identifies regional clusters of cities sharing homogeneous airsheds.</li>
+</ul>
+
+<!-- SECTION 4.7: SCALA JOB -->
+<h2>4.7 Why Scala for Apache Spark?</h2>
+<p>
+    Teachers frequently ask: <em>"Why did you write a Scala job (<code>CityPulseAnalytics.scala</code>) when you already have Python?"</em>
+</p>
+<div class="callout callout-viva">
+    <div class="callout-header">⭐ High-Scoring Viva Answer</div>
+    <strong>You say:</strong><br>
+    <em>
+        "1. Apache Spark is natively written in <strong>Scala</strong> and runs inside the Java Virtual Machine (JVM).<br>
+        2. In PySpark, worker nodes must spin up a Python subprocess, serialize data between the JVM and Python via Py4J, execute the function, and deserialize it back. This causes a serialization overhead.<br>
+        3. Scala code executes natively inside the Spark JVM with zero translation overhead.<br>
+        4. Scala provides compile-time type safety through <strong>Case Classes</strong> and expressive <strong>Pattern Matching</strong>, eliminating runtime type errors in production pipelines."
+    </em>
+</div>
+
+<!-- ========================================================================= -->
+<!-- CHAPTER 5: SMART ENGINEERING IN CITYPULSE -->
+<!-- ========================================================================= -->
+<div class="section-break"></div>
+<h1>5. Smart Engineering: Alert State Machine &amp; Anomaly Detection</h1>
+
+<p>
+    A basic student project just triggers an alert whenever a number crosses 100. CityPulse uses <strong>advanced industrial software engineering principles</strong>:
+</p>
+
+<h2>5.1 The Finite State Machine (FSM) for Alerts</h2>
+<p>
+    Raw sensor readings bounce up and down. If the threshold is 150 µg/m³ and the reading fluctuates between 149 and 151 every second, a naive system sends 60 emails a minute! This is called <strong>alert fatigue</strong> or <strong>flapping</strong>. CityPulse solves this with a 3-stage State Machine:
+</p>
+
+<div class="flow-box">
+[Normal Air] ──(PM2.5 > 150 µg/m³)──► [State: NEW]
+                                            │
+                                  (Operator acknowledges)
+                                            │
+                                            ▼
+                                  [State: ACKNOWLEDGED]
+                                            │
+                                  (PM2.5 drops below 135 µg/m³)
+                                            │
+                                            ▼
+                                   [State: RESOLVED]
+</div>
+
+<ul>
+    <li><strong>Hysteresis Buffer (10%):</strong> To resolve an alert triggered at 150 µg/m³, pollution must drop not just to 149, but below <strong>135 µg/m³</strong> (10% safety buffer). This guarantees the alert won't turn on and off rapidly!</li>
+    <li><strong>Single Active Alert Invariant:</strong> A city can only have ONE active alert at any time. A unique database index prevents duplicate alerts.</li>
+</ul>
+
+<h2>5.2 Statistical Anomaly Detection (The 3-Sigma Rule)</h2>
+<div class="callout callout-simple">
+    <div class="callout-header">💡 In Simple Words for You</div>
+    A reading of 220 µg/m³ in Delhi during November smog is unfortunate, but it is <em>statistically normal</em> for that season. However, a reading of 220 µg/m³ in clean coastal Bengaluru is a shocking, dangerous anomaly (perhaps a massive factory fire or a malfunctioning sensor)!
+</div>
+
+<p>
+    CityPulse implements a <strong>Rolling Z-Score</strong> anomaly detector:
+</p>
+<pre>
+Z = (Current Reading - Rolling Mean) / Rolling Standard Deviation
+</pre>
+<ul>
+    <li>If <strong>$|Z| > 3.0$</strong> (more than 3 standard deviations away from the city's 24-hour mean), the reading is flagged as a <code>CRITICAL ANOMALY</code>.</li>
+    <li>This catches sensor equipment failures, transmission glitches, and sudden industrial leaks instantly without relying on hardcoded static numbers.</li>
+</ul>
+
+<!-- ========================================================================= -->
+<!-- CHAPTER 6: TOUR OF THE 11 DASHBOARD PAGES -->
+<!-- ========================================================================= -->
+<div class="section-break"></div>
+<h1>6. Dashboard Tour: The 11 Dedicated Application Pages</h1>
+
+<p>
+    When presenting your project, you will click through the sidebar navigation. Here is what each page does and what you should demonstrate:
+</p>
+
+<table>
+    <thead>
+        <tr>
+            <th style="width: 25%;">Page Name</th>
+            <th style="width: 35%;">What It Displays</th>
+            <th style="width: 40%;">What to Point Out to the Teacher</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>1. City overview</strong></td>
+            <td>Main command centre: KPI metric cards, top polluted cities, active alerts, quick stats.</td>
+            <td>"Here is the executive view showing live health, latest PM2.5 averages, and color-coded status badges across all 10 cities."</td>
+        </tr>
+        <tr>
+            <td><strong>2. Live monitoring</strong></td>
+            <td>Real-time updating feed with sub-second timestamps and auto-refresh countdown.</td>
+            <td>"This page shows continuous streaming ingestion. The data updates dynamically as new readings flow in from Kafka."</td>
+        </tr>
+        <tr>
+            <td><strong>3. Pollution map</strong></td>
+            <td>Interactive geospatial Scattermapbox with heat-scaled bubbles across Indian coordinates.</td>
+            <td>"We mapped exact latitude and longitude coordinates for all monitoring stations. Red glowing circles pinpoint high-smog zones."</td>
+        </tr>
+        <tr>
+            <td><strong>4. Historical analytics</strong></td>
+            <td>Time-series trend curves, diurnal day/night cycle graphs, and city-to-city comparisons.</td>
+            <td>"Notice the rush-hour pollution peaks at 8 AM and 8 PM, demonstrating real urban traffic correlation."</td>
+        </tr>
+        <tr>
+            <td><strong>5. Alerts centre</strong></td>
+            <td>Transactional alert log with state badges (NEW, ACKNOWLEDGED, RESOLVED) and action buttons.</td>
+            <td>"Teachers love this: click 'Acknowledge' or 'Resolve' to demonstrate transactional state transitions in PostgreSQL."</td>
+        </tr>
+        <tr>
+            <td><strong>6. Anomaly detection</strong></td>
+            <td>Z-score distribution plots, outlier scatter plots, and sensor anomaly diagnostics.</td>
+            <td>"Shows the 3-Sigma ($3\sigma$) statistical model identifying unnatural spikes separate from seasonal baselines."</td>
+        </tr>
+        <tr>
+            <td><strong>7. Spark SQL &amp; DataFrames</strong></td>
+            <td>Interactive SQL query runner, schema inspector, and Catalyst plan visualizer.</td>
+            <td>"Demonstrates distributed SQL queries over partitioned DataFrames with query latency metrics."</td>
+        </tr>
+        <tr>
+            <td><strong>8. Spark MLlib Lab</strong></td>
+            <td>Linear regression forecasting, 4-model classification benchmark, and K-means clustering.</td>
+            <td>"Show the Confusion Matrix and Model Comparison table (Accuracy, F1-Score) powered by PySpark MLlib."</td>
+        </tr>
+        <tr>
+            <td><strong>9. Graph Analytics (GraphX)</strong></td>
+            <td>Directed pollution diffusion network, PageRank scores, and wind corridor influence.</td>
+            <td>"Explains regional smog diffusion across the Indo-Gangetic plain modeled as a directed graph."</td>
+        </tr>
+        <tr>
+            <td><strong>10. Kafka Streaming Pipeline</strong></td>
+            <td>Live Kafka broker metadata, partition offset inspector, and interactive event publisher.</td>
+            <td>"Use the form to publish a live test event to Kafka right in front of the teacher and watch it process!"</td>
+        </tr>
+        <tr>
+            <td><strong>11. Architecture &amp; RDD Lab / Scala Job</strong></td>
+            <td>RDD Lineage DAG visualizer, narrow vs wide dependency comparison, and Scala source code.</td>
+            <td>"Proves deep understanding of Spark internal mechanics, DAG stages, shuffle partitions, and Scala code."</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- ========================================================================= -->
+<!-- CHAPTER 7: TOP 25 VIVA QUESTIONS & HIGH-SCORING ANSWERS -->
+<!-- ========================================================================= -->
+<div class="section-break"></div>
+<h1>7. Top 25 Viva / Oral Exam Questions &amp; Answers</h1>
+
+<p>
+    Review these 25 questions before your evaluation. Every question includes a concise, technically accurate answer that evaluators look for:
+</p>
+
+<!-- Q1 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q1</span>
+        <span>What is the core problem CityPulse solves, and why is Big Data technology needed?</span>
+    </div>
+    <div class="qa-answer">
+        Urban environmental monitoring produces high-velocity, continuous time-series streams from hundreds of geographically dispersed IoT sensors. Traditional single-server relational databases face write bottlenecks, lack fault-tolerant buffering, and cannot run machine learning or graph analytics across historical terabytes in memory. CityPulse uses <strong>Apache Kafka</strong> for distributed buffering, <strong>Apache Spark</strong> for parallel in-memory stream processing, and <strong>PostgreSQL</strong> for indexed storage.
+    </div>
+</div>
+
+<!-- Q2 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q2</span>
+        <span>What is Apache Kafka and what role does it play in this project?</span>
+    </div>
+    <div class="qa-answer">
+        Kafka is a distributed, partitioned, replicated commit log service. In CityPulse, it acts as the centralized asynchronous message backbone. The Python CPCB producer writes sensor telemetry to the topic <code>pollution-readings</code>. Kafka buffers this stream, decoupling producers from consumers, providing backpressure protection and ensuring zero data loss even during network outages.
+    </div>
+</div>
+
+<!-- Q3 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q3</span>
+        <span>Explain the difference between a Kafka Topic, a Partition, and an Offset.</span>
+    </div>
+    <div class="qa-answer">
+        <ul class="qa-bullet">
+            <li><strong>Topic:</strong> A logical channel or category to which messages are published (e.g. <code>pollution-readings</code>).</li>
+            <li><strong>Partition:</strong> Topics are split into ordered, immutable sequences called partitions for horizontal scalability and parallel consumption across cluster nodes.</li>
+            <li><strong>Offset:</strong> A unique sequential integer assigned to each message within a partition, tracking consumer progress like a bookmark.</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Q4 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q4</span>
+        <span>What is an RDD in Apache Spark? Why is it called "Resilient" and "Distributed"?</span>
+    </div>
+    <div class="qa-answer">
+        An RDD (Resilient Distributed Dataset) is Spark's fundamental data abstraction. It represents an immutable, partitioned collection of records:
+        <ul class="qa-bullet">
+            <li><strong>Resilient:</strong> Fault-tolerant. It tracks its lineage DAG and can reconstruct lost partitions automatically if a node crashes.</li>
+            <li><strong>Distributed:</strong> Data is sliced into partitions distributed across multiple worker nodes for parallel computation in memory (RAM).</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Q5 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q5</span>
+        <span>What is the difference between Spark Transformations and Actions? Give examples.</span>
+    </div>
+    <div class="qa-answer">
+        <ul class="qa-bullet">
+            <li><strong>Transformations:</strong> Operations that create a new RDD from an existing one (e.g., <code>map()</code>, <code>filter()</code>, <code>flatMap()</code>). They are <em>lazily evaluated</em>—nothing executes until an action is called.</li>
+            <li><strong>Actions:</strong> Operations that trigger execution of the DAG and return a concrete result to the driver or write to storage (e.g., <code>count()</code>, <code>collect()</code>, <code>first()</code>, <code>saveAsTextFile()</code>).</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Q6 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q6</span>
+        <span>What is Lazy Evaluation in Spark, and why is it beneficial?</span>
+    </div>
+    <div class="qa-answer">
+        Spark does not compute intermediate transformations immediately. Instead, it records them as a graph of dependencies (the Lineage DAG). When an action is invoked, the <strong>Catalyst Optimizer</strong> analyzes the whole pipeline, combines stages, pushes down filter predicates, and avoids unnecessary passes over data, resulting in optimal execution speed.
+    </div>
+</div>
+
+<!-- Q7 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q7</span>
+        <span>Explain Narrow Dependency vs. Wide Dependency in Spark. Why does it matter?</span>
+    </div>
+    <div class="qa-answer">
+        <ul class="qa-bullet">
+            <li><strong>Narrow Dependency:</strong> Each parent partition is consumed by at most one child partition (e.g., <code>map</code>, <code>filter</code>). Computed locally in memory with zero network transfer. Fast!</li>
+            <li><strong>Wide Dependency:</strong> Multiple child partitions depend on data from parent partitions (e.g., <code>groupByKey</code>, <code>reduceByKey</code>, <code>join</code>). This triggers a <strong>Shuffle</strong>—redistributing data across cluster nodes over the physical network, which is the biggest performance bottleneck in distributed computing.</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Q8 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q8</span>
+        <span>How does Apache Spark achieve fault tolerance without storing replicas on disk?</span>
+    </div>
+    <div class="qa-answer">
+        Spark maintains an <strong>RDD Lineage Graph (DAG)</strong> that records every operation applied from the source. If a worker node crashes and its RAM is lost, the Spark Driver re-schedules only the missing partitions on another worker, which replays the lineage transformations on that slice of data.
+    </div>
+</div>
+
+<!-- Q9 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q9</span>
+        <span>What is Spark Structured Streaming and how does it differ from older DStreams?</span>
+    </div>
+    <div class="qa-answer">
+        DStreams (Discretized Streams) were based on raw RDDs. <strong>Structured Streaming</strong> is built on the Spark SQL engine and DataFrames, treating a live data stream as an <em>unbounded append-only table</em>. It supports event-time processing, automatic watermarking, Catalyst query optimizations, and exactly-once processing guarantees.
+    </div>
+</div>
+
+<!-- Q10 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q10</span>
+        <span>What is the difference between Event-Time and Processing-Time?</span>
+    </div>
+    <div class="qa-answer">
+        <strong>Event-Time</strong> is the timestamp embedded inside the sensor payload when the physical measurement took place. <strong>Processing-Time</strong> is the clock time of the Spark server when it processes the micro-batch. Using Event-Time is critical because network lag or temporary sensor disconnection should not corrupt historical averages.
+    </div>
+</div>
+
+<!-- Q11 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q11</span>
+        <span>What is Watermarking in Spark Streaming? Why did you set it to 10 minutes?</span>
+    </div>
+    <div class="qa-answer">
+        Watermarking defines how late data can arrive before being discarded: <code>.withWatermark("timestamp", "10 minutes")</code>. It tells Spark: <em>"Wait up to 10 minutes for delayed sensor packets to update past windows."</em> After 10 minutes, the state for that window is finalized and purged from memory, preventing memory leaks while handling real-world network latency.
+    </div>
+</div>
+
+<!-- Q12 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q12</span>
+        <span>What is a 5-minute Tumbling Window? How does it differ from a Sliding Window?</span>
+    </div>
+    <div class="qa-answer">
+        <ul class="qa-bullet">
+            <li><strong>Tumbling Window:</strong> Fixed-size, contiguous, non-overlapping time windows (e.g. 12:00–12:05, 12:05–12:10). Each reading belongs to exactly one window.</li>
+            <li><strong>Sliding Window:</strong> Overlapping time windows (e.g. a 5-minute window that recalculates every 1 minute). Readings belong to multiple windows. CityPulse uses tumbling windows for rolling aggregate persistence.</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Q13 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q13</span>
+        <span>What is the Catalyst Optimizer in Spark SQL?</span>
+    </div>
+    <div class="qa-answer">
+        Catalyst is Spark's rule-based and cost-based query optimization framework. It takes user DataFrame/SQL queries, converts them into an Abstract Syntax Tree (AST), performs analysis, optimizes execution (e.g. pushing down WHERE filters before JOINs), and generates optimized JVM bytecode on the fly.
+    </div>
+</div>
+
+<!-- Q14 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q14</span>
+        <span>What is VectorAssembler in Spark MLlib? Why is it required?</span>
+    </div>
+    <div class="qa-answer">
+        In Spark MLlib, machine learning estimators (regression, classification, clustering) expect feature columns to be formatted as a single unified <code>Vector</code> per row. <strong>VectorAssembler</strong> is a feature transformer that accepts individual feature columns (e.g., <code>temperature</code>, <code>humidity</code>, <code>wind_speed</code>, <code>hour</code>) and combines them into a single <code>features</code> vector column.
+    </div>
+</div>
+
+<!-- Q15 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q15</span>
+        <span>What machine learning models are implemented in the Spark MLlib Lab?</span>
+    </div>
+    <div class="qa-answer">
+        <ul class="qa-bullet">
+            <li><strong>Regression:</strong> Linear Regression for forecasting continuous PM2.5 levels, evaluated via $R^2$, RMSE, and MAE.</li>
+            <li><strong>Classification Benchmark:</strong> Logistic Regression, Decision Tree, Support Vector Machine (Linear SVC), and Gaussian Naive Bayes to classify hazard levels (Normal vs High vs Critical), comparing Accuracy and F1-Scores.</li>
+            <li><strong>Clustering:</strong> K-Means clustering ($k=3$) to partition cities into pollution archetypes based on multivariate telemetry.</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Q16 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q16</span>
+        <span>How does GraphX / Graph Analytics model air pollution diffusion?</span>
+    </div>
+    <div class="qa-answer">
+        CityPulse models the regional airshed as a directed multigraph:
+        <ul class="qa-bullet">
+            <li><strong>Vertices ($V$):</strong> Monitored cities with attributes (current PM2.5, population).</li>
+            <li><strong>Edges ($E$):</strong> Directed geographic proximity and prevailing wind vectors between cities.</li>
+            <li><strong>PageRank:</strong> Measures the relative environmental influence of cities, identifying regional pollution sources whose emissions heavily impact downwind neighbors.</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Q17 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q17</span>
+        <span>Why did you write a Scala Spark job if PySpark already exists?</span>
+    </div>
+    <div class="qa-answer">
+        Spark is natively written in Scala. PySpark requires inter-process communication between the Python runtime and the JVM via Py4J, which incurs serialization/deserialization overhead. Scala runs natively inside the Spark JVM, provides static type safety through Case Classes, uses efficient pattern matching, and avoids Python runtime overhead in high-throughput enterprise pipelines.
+    </div>
+</div>
+
+<!-- Q18 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q18</span>
+        <span>Explain the Alert State Machine. What are its states and transitions?</span>
+    </div>
+    <div class="qa-answer">
+        The Alert FSM prevents alert flapping and ensures transactional accountability. It has three states:
+        <ul class="qa-bullet">
+            <li><strong>NEW:</strong> Automatically created when a city's PM2.5 breaches the High threshold (150 µg/m³).</li>
+            <li><strong>ACKNOWLEDGED:</strong> Marked by a human operator indicating awareness and ongoing intervention.</li>
+            <li><strong>RESOLVED:</strong> Automatically or manually cleared when PM2.5 drops below the hysteresis recovery threshold (135 µg/m³, which is 10% below the trigger threshold).</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Q19 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q19</span>
+        <span>What is Hysteresis in threshold alerting and why is it used?</span>
+    </div>
+    <div class="qa-answer">
+        Hysteresis is a dual-threshold mechanism. If trigger and resolve thresholds are identical (e.g., 150 µg/m³), sensor jitter between 149.9 and 150.1 would generate dozens of alert spam messages per minute. Hysteresis requires the reading to drop substantially below the trigger level (to 135 µg/m³) before resolving the alert, guaranteeing stability.
+    </div>
+</div>
+
+<!-- Q20 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q20</span>
+        <span>How does the 3-Sigma Anomaly Detection work?</span>
+    </div>
+    <div class="qa-answer">
+        It calculates the rolling 24-hour mean ($\mu$) and standard deviation ($\sigma$) for each specific city. When a new reading arrives, it computes the Z-score: $Z = (X - \mu) / \sigma$. If $|Z| > 3.0$ (representing values outside 99.73% of normal distribution), the reading is flagged as a statistical anomaly, detecting equipment failure or sudden industrial disasters.
+    </div>
+</div>
+
+<!-- Q21 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q21</span>
+        <span>What is the purpose of the <code>is_test</code> isolation flag in PostgreSQL?</span>
+    </div>
+    <div class="qa-answer">
+        The <code>is_test</code> boolean column ensures strict isolation between production data and testing. Automated test suites and smoke tests insert records with <code>is_test = TRUE</code>. Production dashboard queries and analytics views filter on <code>is_test = FALSE</code>, preventing test data from distorting public environmental metrics.
+    </div>
+</div>
+
+<!-- Q22 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q22</span>
+        <span>What database indexes did you create and why?</span>
+    </div>
+    <div class="qa-answer">
+        We created a compound B-tree index on <code>pollution_readings(city, timestamp DESC)</code> and a partial index on <code>alert_state(city, status) WHERE status IN ('NEW', 'ACKNOWLEDGED')</code>. This allows latest-reading queries and active alert checks to execute in under 1 millisecond without sequential table scans.
+    </div>
+</div>
+
+<!-- Q23 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q23</span>
+        <span>What automated tests did you write to verify pipeline correctness?</span>
+    </div>
+    <div class="qa-answer">
+        We implemented a comprehensive automated test suite of <strong>122 Pytest unit and integration tests</strong> across 6 test modules: alert lifecycle state transitions (31 tests), anomaly Z-scores (13 tests), database view invariants (15 tests), ingestion schema validation (23 tests), Spark streaming logic (12 tests), and dashboard UI rendering (28 tests). All 122 tests pass with 100% success rate.
+    </div>
+</div>
+
+<!-- Q24 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q24</span>
+        <span>What happens if a Kafka broker or consumer crashes? How does recovery work?</span>
+    </div>
+    <div class="qa-answer">
+        If a consumer crashes, Kafka detects consumer heartbeat loss and triggers a <strong>Consumer Group Rebalance</strong>, reassigning partitions to surviving workers. The replacement worker reads the committed offset from Kafka's internal <code>__consumer_offsets</code> topic and resumes processing without skipping or duplicating records.
+    </div>
+</div>
+
+<!-- Q25 -->
+<div class="qa-box">
+    <div class="qa-question">
+        <span class="qa-badge">Q25</span>
+        <span>If you had 6 more months to scale this project, what would you add next?</span>
+    </div>
+    <div class="qa-answer">
+        1. Deploy on a multi-node Kubernetes (EKS/GKE) cluster with Spark-on-K8s operator and Strimzi Kafka operator.<br>
+        2. Adopt <strong>Apache Iceberg</strong> or <strong>Delta Lake</strong> on Amazon S3 for an ACID-compliant Lakehouse architecture.<br>
+        3. Integrate deep learning (LSTM/Temporal Fusion Transformers) for 72-hour air quality forecasting using meteorological satellite data.<br>
+        4. Integrate automated SMS/WhatsApp emergency alerts via Twilio for municipal disaster authorities.
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- CHAPTER 8: 5-MINUTE LIVE DEMO SCRIPT -->
+<!-- ========================================================================= -->
+<div class="section-break"></div>
+<h1>8. The 5-Minute Live Presentation Script &amp; Demo Playbook</h1>
+
+<p>
+    Follow this chronological script when presenting live in front of the teacher:
+</p>
+
+<h2>Minute 1: The Introduction &amp; Live Map (Hook the Audience)</h2>
+<ul>
+    <li><strong>Screen:</strong> Start on <strong>City overview</strong>, then switch to <strong>Pollution map</strong>.</li>
+    <li><strong>Say:</strong> <em>"Good morning, Professor. This is CityPulse, a distributed real-time air quality intelligence platform. On this geospatial map, we are tracking 10 canonical Indian cities—including Delhi, Mumbai, Kolkata, Lucknow, and Patna. The color coding immediately highlights severe air hazard zones like the Indo-Gangetic plain, while coastal cities show clean green telemetry."</em></li>
+</ul>
+
+<h2>Minute 2: The Ingestion Pipeline &amp; Kafka Live Publisher (Show Technical Depth)</h2>
+<ul>
+    <li><strong>Screen:</strong> Navigate to <strong>Kafka Streaming Pipeline</strong>.</li>
+    <li><strong>Say:</strong> <em>"Behind this visual layer lies an enterprise Big Data pipeline. Here is our live Kafka broker inspector. Telemetry is ingested from official CPCB monitoring stations. To demonstrate that this pipeline is truly live and responsive, let me publish a synthetic test event for Patna with an extreme PM2.5 reading of 350 µg/m³ right now."</em></li>
+    <li><strong>Action:</strong> Set City = Patna, PM2.5 = 350, click <strong>"Publish Event to Kafka"</strong>.</li>
+    <li><strong>Say:</strong> <em>"This message was serialized as JSON, sent to the Kafka broker on topic 'pollution-readings', and ingested into our database in real time."</em></li>
+</ul>
+
+<h2>Minute 3: Alerts Centre &amp; Finite State Machine (Demonstrate Logic)</h2>
+<ul>
+    <li><strong>Screen:</strong> Navigate to <strong>Alerts centre</strong>.</li>
+    <li><strong>Say:</strong> <em>"Because the reading exceeded 150 µg/m³, our alert engine triggered an alert. Notice the state is 'NEW'. To prevent alert flapping, our state machine implements a 10% hysteresis buffer. Let me click 'Acknowledge'—the state transition is immediately persisted in PostgreSQL with audit timestamps."</em></li>
+    <li><strong>Action:</strong> Click the <strong>Acknowledge</strong> button on the active alert.</li>
+</ul>
+
+<h2>Minute 4: Distributed Computing Labs (Spark SQL, MLlib &amp; GraphX)</h2>
+<ul>
+    <li><strong>Screen:</strong> Click on <strong>Spark MLlib Lab</strong> and scroll through the Confusion Matrix and Model Comparison table.</li>
+    <li><strong>Say:</strong> <em>"For distributed analytics, we implemented dedicated cluster computing modules. In this MLlib lab, we use Spark's VectorAssembler to extract atmospheric features and benchmark four distributed classifiers: Logistic Regression, Decision Trees, SVM, and Naive Bayes, achieving over 90% accuracy in air hazard classification."</em></li>
+    <li><strong>Screen:</strong> Quickly show <strong>Graph Analytics (GraphX)</strong>.</li>
+    <li><strong>Say:</strong> <em>"Here, we model the regional airshed as a directed diffusion graph, running PageRank to quantify how emissions from agricultural and industrial hubs disperse downwind."</em></li>
+</ul>
+
+<h2>Minute 5: Architecture, Scala &amp; Automated Testing (Close with Strength)</h2>
+<ul>
+    <li><strong>Screen:</strong> Navigate to <strong>Architecture &amp; RDD Lab</strong>.</li>
+    <li><strong>Say:</strong> <em>"Under the hood, we demonstrate foundational cluster computing mechanics: RDD lineage DAGs, Narrow vs Wide dependencies, and shuffling partitions. We also wrote a native Scala Spark job (CityPulseAnalytics.scala) to harness JVM-native execution speed. Finally, the entire pipeline is verified by 122 automated unit and integration tests passing with 100% success. Thank you, Professor. I am ready for any questions!"</em></li>
+</ul>
+
+<div class="callout callout-teacher">
+    <div class="callout-header">🎯 Teacher Defense Strategy (If You Get Nervous)</div>
+    <ul style="margin-left: 18px;">
+        <li><strong>Take a 2-second breath before answering:</strong> It makes you look thoughtful, calm, and senior.</li>
+        <li><strong>Always tie back to the 3 pillars:</strong> If you forget a detail, ground your answer in <em>Ingestion (Kafka)</em>, <em>Processing (Spark)</em>, or <em>Storage (PostgreSQL)</em>.</li>
+        <li><strong>Acknowledge tradeoffs:</strong> Teachers love students who know limitations. Saying: <em>"In production at 10 million sensors, we would swap PostgreSQL for Cassandra or Delta Lake"</em> earns instant bonus marks!</li>
+    </ul>
+</div>
+
+</body>
+</html>
+"""
+
+def main():
+    print("Writing HTML presentation guide...")
+    os.makedirs(os.path.dirname(OUTPUT_HTML), exist_ok=True)
+    with open(OUTPUT_HTML, "w", encoding="utf-8") as f:
+        f.write(HTML_CONTENT)
+    print(f"Saved HTML to: {OUTPUT_HTML}")
+
+    print("Compiling PDF with Google Chrome Headless...")
+    chrome_bin = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    chrome_cmd = [
+        chrome_bin,
+        "--headless",
+        "--disable-gpu",
+        "--run-all-compositor-stages-before-draw",
+        "--no-pdf-header-footer",
+        f"--print-to-pdf={OUTPUT_PDF}",
+        OUTPUT_HTML,
+    ]
+
+    res = subprocess.run(chrome_cmd, capture_output=True, text=True)
+    if os.path.exists(OUTPUT_PDF):
+        # Also copy to report/ dir
+        subprocess.run(["cp", OUTPUT_PDF, REPORT_PDF])
+        pdf_size_mb = os.path.getsize(OUTPUT_PDF) / (1024 * 1024)
+        print("============================================================")
+        print("SUCCESS: Teacher Presentation & Viva Guide PDF generated!")
+        print(f"Root PDF:   {OUTPUT_PDF}")
+        print(f"Report PDF: {REPORT_PDF}")
+        print(f"Size:       {pdf_size_mb:.2f} MB")
+        print("============================================================")
+    else:
+        print(f"Error compiling PDF: {res.stderr}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

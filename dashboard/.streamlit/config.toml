@@ -1,0 +1,87 @@
+# CityPulse — Environmental Intelligence "Living Atmosphere" Theme
+# Dark Navy #050B18, Teal #2DD4BF, Amber #F59E0B, Crimson #F43F5E, Violet #8B5CF6
+
+[server]
+port = 8502
+headless = true
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"
+
+[theme]
+base = "dark"
+primaryColor = "#2DD4BF"                # Vibrant atmospheric teal
+backgroundColor = "#050B18"             # Deep midnight navy
+secondaryBackgroundColor = "#0B1528"    # Elevated glass surface
+codeBackgroundColor = "#0E1A30"
+textColor = "#F8FAFC"                   # High-contrast crisp white
+linkColor = "#2DD4BF"
+borderColor = "#1E293B"                 # Muted slate border
+codeTextColor = "#E2E8F0"
+showWidgetBorder = true
+showSidebarBorder = true
+baseRadius = "12px"
+buttonRadius = "12px"
+
+# Modern Typography — Space Grotesk (headings), Inter (body), JetBrains Mono (numbers/code)
+font = "'Inter':https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+headingFont = "'Space Grotesk':https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap"
+codeFont = "'JetBrains Mono':https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap"
+baseFontSize = 14
+baseFontWeight = 400
+codeFontSize = "13px"
+headingFontSizes = ["30px", "24px", "20px", "16px", "14px", "12px"]
+headingFontWeights = [700, 600, 600, 600, 500, 500]
+linkUnderline = false
+
+# Severity Color Tokens (B6)
+greenColor = "#2DD4BF"     # Normal — Clean teal
+redColor = "#F43F5E"       # Critical — Crimson
+yellowColor = "#FBBF24"    # Moderate — Amber yellow
+orangeColor = "#F59E0B"    # High — Amber orange
+blueColor = "#38BDF8"      # Telemetry sky blue
+violetColor = "#8B5CF6"    # Anomaly violet
+grayColor = "#94A3B8"      # Secondary slate
+
+# Categorical chart colors (10 non-repeating palette for canonical cities)
+chartCategoricalColors = [
+    "#F43F5E",
+    "#F97316",
+    "#0284C7",
+    "#10B981",
+    "#FBBF24",
+    "#8B5CF6",
+    "#06B6D4",
+    "#EC4899",
+    "#3B82F6",
+    "#D946EF",
+]
+
+# Sequential gradient
+chartSequentialColors = [
+    "#050B18",
+    "#0B1528",
+    "#0E243A",
+    "#0D4B55",
+    "#0F766E",
+    "#14B8A6",
+    "#2DD4BF",
+    "#5EEAD4",
+    "#99F6E4",
+    "#CCFBF1",
+]
+
+dataframeBorderColor = "#1E293B"
+dataframeHeaderBackgroundColor = "#0E1A30"
+dataframeHeaderTextColor = "#F8FAFC"
+
+[theme.sidebar]
+backgroundColor = "#050B18"
+secondaryBackgroundColor = "#0B1528"
+codeBackgroundColor = "#0E1A30"
+textColor = "#F8FAFC"
+borderColor = "#1E293B"
+primaryColor = "#2DD4BF"

@@ -1,0 +1,102 @@
+services:
+  kafka:
+    image: apache/kafka:4.1.1
+    hostname: kafka
+    ports:
+      - "29092:29092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:29092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  postgres:
+    image: postgres:17
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: citypulse
+      POSTGRES_USER: citypulse
+      POSTGRES_PASSWORD: ${CITYPULSE_DB_PASSWORD:-citypulse_dev_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U citypulse -d citypulse"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ingestion:
+    image: python:3.12-slim
+    working_dir: /app
+    volumes:
+      - ./ingestion:/app
+    environment:
+      KAFKA_SERVERS: kafka:9092
+      DATABASE_URL: postgresql://citypulse:${CITYPULSE_DB_PASSWORD:-citypulse_dev_password}@postgres:5432/citypulse
+      HIGH_THRESHOLD: ${HIGH_THRESHOLD:-100}
+      CRITICAL_THRESHOLD: ${CRITICAL_THRESHOLD:-150}
+    command: sh -c "pip install --no-cache-dir -r requirements.txt && python -u consumer.py"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import socket; socket.socket().connect((\"postgres\", 5432))' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  spark:
+    image: apache/spark:3.5.7
+    user: "0:0"
+    working_dir: /app
+    environment:
+      HOME: /tmp/spark-home
+      CITYPULSE_DB_PASSWORD: ${CITYPULSE_DB_PASSWORD:-citypulse_dev_password}
+      HIGH_THRESHOLD: ${HIGH_THRESHOLD:-100}
+      CRITICAL_THRESHOLD: ${CRITICAL_THRESHOLD:-150}
+    volumes:
+      - ./spark_jobs:/app
+      - spark_checkpoints:/tmp/citypulse-checkpoint
+      - spark_postgres_checkpoints:/tmp/citypulse-postgres-checkpoint
+      - spark_ivy:/tmp/spark-home/.ivy2
+    command: >
+      sh -c "mkdir -p /tmp/spark-home/.ivy2/cache /tmp/spark-home/.ivy2/jars &&
+      exec /opt/spark/bin/spark-submit
+      --conf spark.jars.ivy=/tmp/spark-home/.ivy2
+      --master local[*]
+      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.7,org.postgresql:postgresql:42.7.7
+      /app/kafka_stream.py"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  kafka_data:
+  postgres_data:
+  spark_checkpoints:
+  spark_postgres_checkpoints:
+  spark_ivy:
